@@ -36,6 +36,16 @@ class RefundReceipt
         $order = $this->orderRepository->get($refund->getOrderId());
         $figures = $this->calculator->fromSnapshot($refund, $items, $order);
 
+        $groups = [];
+        foreach ($figures->lines as $line) {
+            $rate = $line->taxRate;
+            if (!isset($groups[$rate])) {
+                $groups[$rate] = ['rate' => $rate, 'taxable' => '0.0000', 'tax' => '0.0000'];
+            }
+            $groups[$rate]['taxable'] = bcadd($groups[$rate]['taxable'], $line->rowAmount, 4);
+            $groups[$rate]['tax'] = bcadd($groups[$rate]['tax'], $line->taxAmount, 4);
+        }
+
         return [
             'refund_no' => $refund->getRefundNo(),
             'currency' => $figures->currency,
@@ -53,8 +63,9 @@ class RefundReceipt
                 'tax' => $figures->refundTax,
                 'grand_total' => $figures->refundGrandTotal,
             ],
+            'tax_groups' => array_values($groups),
             'lines' => array_map(
-                static fn (\Acme\SellerRefund\Model\Total\RefundFigureLine $line): array => $line->toArray(),
+                static fn(\Acme\SellerRefund\Model\Total\RefundFigureLine $line): array => $line->toArray(),
                 $figures->lines
             ),
         ];
