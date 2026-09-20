@@ -12,8 +12,8 @@ use Acme\SellerRefund\Model\SellerLineResolver;
 use Acme\SellerRefund\Model\Tax\TaxCodeResolver;
 use Acme\SellerRefund\Model\Total\RefundTotalCalculator;
 use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
-use Magento\Sales\Api\Data\OrderInterface;
-use Magento\Sales\Api\Data\OrderItemInterface;
+use Magento\Sales\Model\Order;
+use Magento\Sales\Model\Order\Item as OrderItem;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -44,28 +44,34 @@ class RefundReceiptTest extends TestCase
         $refund->method('getCreatedAt')->willReturn('2026-09-16 10:00:00');
 
         // Mixed order setup: 1 seller item (ID 10) and 1 core first-party item (ID 20)
-        $sellerItem = $this->createMock(OrderItemInterface::class);
+        $sellerItem = $this->createMock(OrderItem::class);
         $sellerItem->method('getItemId')->willReturn(10);
         $sellerItem->method('getSku')->willReturn('SELLER-RED-01');
         $sellerItem->method('getName')->willReturn('Red Seller Item');
         $sellerItem->method('getPrice')->willReturn(1000.0);
         $sellerItem->method('getQtyOrdered')->willReturn(2.0);
-        $sellerItem->method('getData')->with('mp_tax_class')->willReturn('1');
+        $sellerItem->method('getData')->willReturnCallback(
+            static fn(string $key) => match ($key) {
+                'mp_seller_code' => 'SLR-100',
+                'mp_tax_class' => '1',
+                default => null,
+            }
+        );
 
-        $coreItem = $this->createMock(OrderItemInterface::class);
+        $coreItem = $this->createMock(OrderItem::class);
         $coreItem->method('getItemId')->willReturn(20);
         $coreItem->method('getSku')->willReturn('CORE-ITEM-99');
         $coreItem->method('getName')->willReturn('First-Party Core Item');
         $coreItem->method('getPrice')->willReturn(5000.0);
         $coreItem->method('getQtyOrdered')->willReturn(1.0);
 
-        $order = $this->createMock(OrderInterface::class);
+        $order = $this->createMock(Order::class);
         $order->method('getEntityId')->willReturn(42);
         $order->method('getShippingAmount')->willReturn(500.0);
         $order->method('getOrderCurrencyCode')->willReturn('JPY');
         $order->method('getAllVisibleItems')->willReturn([$sellerItem, $coreItem]);
 
-        $sellerLineResolver->method('sellerLines')->with($order)->willReturn([10 => $sellerItem]);
+        $sellerLineResolver->method('sellerLines')->willReturn([10 => $sellerItem]);
         $taxCodeResolver->method('toBusinessCode')->with(1)->willReturn('010');
         $taxCodeResolver->method('rateFor')->with('010')->willReturn('0.1000');
 
@@ -98,7 +104,7 @@ class RefundReceiptTest extends TestCase
         // Verify pre-refund figures derive ONLY from seller lines (subtotal = 2000, shipping = 500, tax = 250, grand_total = 2750)
         // Core item ($5000) must be completely excluded!
         self::assertSame('2000.0000', $data['pre_refund']['subtotal']);
-        self::assertSame('5000.0000', $data['pre_refund']['shipping']);
+        self::assertSame('500.0000', $data['pre_refund']['shipping']);
         self::assertSame('250.0000', $data['pre_refund']['tax']);
         self::assertSame('2750.0000', $data['pre_refund']['grand_total']);
 

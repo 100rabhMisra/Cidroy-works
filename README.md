@@ -15,6 +15,22 @@ itself in
 - Git; and
 - at least 8 GB of RAM available to Docker.
 
+## Architectural Take-Home Submission
+
+* **Part 3 Implementation Commit:** `c42da80b47db53d82506c33a625dca05925886a0` (*Fix(SellerRefund): Align RefundReceipt tax invoice grouping and snapshot isolation for mixed orders*)
+* **Part 3 Automated Test Command:**
+  ```bash
+  bin/assignment-test unit --filter RefundReceiptTest
+  ```
+* **Written Submission Deliverables:** Located under [`submission/`](submission/):
+  - [`01-code-review.md`](submission/01-code-review.md) — Comprehensive review of branches `review/pr-01-partial-refund-presentation` and `review/pr-02-erp-refund-sync`.
+  - [`02-refund-design.md`](submission/02-refund-design.md) — End-to-end refund sequence diagram & phased delivery roadmap.
+  - [`03-architecture-review.md`](submission/03-architecture-review.md) — Critical architecture review, risk ranking, & production target state.
+  - [`04-build-impact-note.md`](submission/04-build-impact-note.md) — Impact note for the Part 3 tax invoice PDF receipt fix.
+  - [`05-ai-usage.md`](submission/05-ai-usage.md) — Candid account of AI integration and workflow.
+  - [`06-questions-and-next-steps.md`](submission/06-questions-and-next-steps.md) — Domain questions, assumptions, & rollout strategy.
+
+
 ## Quick start
 
 The four images are private to this assignment. First sign in to the registry
